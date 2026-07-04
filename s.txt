@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำนวณโปรตีนสำหรับผู้ป่วยมะเร็ง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF7EE;
+    --bg-card:#FFFDF9;
+    --ink:#1B2E2A;
+    --ink-soft:#5B6E68;
+    --primary:#1F5C52;
+    --primary-dark:#123A33;
+    --primary-soft:#E1ECE8;
+    --accent:#E3A63E;
+    --accent-dark:#B87F22;
+    --accent-soft:#F7E6C4;
+    --status1:#4F7A63;
+    --status1-soft:#E5EFE8;
+    --status2:#3E6E8E;
+    --status2-soft:#E4EDF3;
+    --status3:#8C4B6B;
+    --status3-soft:#F1E2EA;
+    --line:#E4DDD0;
+    --shadow-lg: 0 24px 48px -20px rgba(18,58,51,0.28);
+    --shadow-sm: 0 6px 16px -8px rgba(18,58,51,0.18);
+    --radius-xl:32px;
+    --radius-lg:24px;
+    --radius-md:16px;
+    --radius-sm:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Sarabun', 'Kanit', sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.num,.eyebrow,.seg-label,.stat-num{ font-family:'Kanit','Sarabun',sans-serif; }
+
+  .wrap{ max-width:920px; margin:0 auto; padding:0 20px 80px; }
+
+  /* ---------- HEADER ---------- */
+  header.hero{
+    position:relative;
+    background:linear-gradient(155deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color:#F6F2E7;
+    padding:56px 20px 84px;
+    overflow:hidden;
+    text-align:center;
+  }
+  header.hero::after{
+    content:"";
+    position:absolute;
+    inset:auto 0 -1px 0;
+    height:44px;
+    background:var(--bg);
+    border-radius:60% 60% 0 0 / 100% 100% 0 0;
+  }
+  .hero-glow{
+    position:absolute; top:-120px; right:-80px; width:360px; height:360px; border-radius:50%;
+    background:radial-gradient(circle, rgba(227,166,62,0.35), transparent 70%);
+    pointer-events:none;
+  }
+  .hero-glow.two{ top:auto; bottom:-140px; left:-100px; right:auto; width:300px; height:300px;
+    background:radial-gradient(circle, rgba(255,255,255,0.10), transparent 70%); }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; letter-spacing:.04em;
+    color:var(--primary-dark); background:var(--accent);
+    padding:7px 16px; border-radius:999px; margin-bottom:22px;
+  }
+  header.hero h1{
+    font-size:clamp(28px,4.4vw,42px);
+    font-weight:700;
+    margin:0 0 14px;
+    letter-spacing:-0.01em;
+  }
+  header.hero p{
+    font-size:16px;
+    color:#D8E6E1;
+    max-width:520px;
+    margin:0 auto;
+    font-weight:300;
+  }
+
+  /* ---------- CALCULATOR CARD ---------- */
+  .calc-card{
+    position:relative;
+    z-index:2;
+    background:var(--bg-card);
+    border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-lg);
+    margin-top:-58px;
+    padding:32px;
+    border:1px solid var(--line);
+  }
+  .field-label{
+    font-size:14px; font-weight:600; color:var(--ink-soft);
+    margin-bottom:12px; display:flex; align-items:center; gap:8px;
+  }
+  .field-label .step{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:50%;
+    background:var(--primary); color:#fff; font-size:12px; font-weight:700;
+    font-family:'Kanit',sans-serif;
+  }
+
+  /* segmented control */
+  .segmented{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    margin-bottom:30px;
+  }
+  .seg-btn{
+    cursor:pointer; border:2px solid var(--line); background:#fff;
+    border-radius:var(--radius-md); padding:14px 10px 12px;
+    text-align:center; transition:border-color .2s ease, background .2s ease, transform .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .seg-btn:hover{ transform:translateY(-2px); }
+  .seg-btn .seg-label{ font-size:15px; font-weight:600; display:block; margin-bottom:3px; }
+  .seg-btn .seg-sub{ font-size:12px; color:var(--ink-soft); display:block; }
+  .seg-btn[data-status="general"].active{ border-color:var(--status1); background:var(--status1-soft); }
+  .seg-btn[data-status="treatment"].active{ border-color:var(--status2); background:var(--status2-soft); }
+  .seg-btn[data-status="malnutrition"].active{ border-color:var(--status3); background:var(--status3-soft); }
+  .seg-btn[data-status="general"].active .seg-label{ color:var(--status1); }
+  .seg-btn[data-status="treatment"].active .seg-label{ color:var(--status2); }
+  .seg-btn[data-status="malnutrition"].active .seg-label{ color:var(--status3); }
+
+  /* weight input */
+  .weight-row{
+    display:flex; align-items:center; gap:18px; margin-bottom:8px;
+  }
+  .weight-box{
+    flex-shrink:0; display:flex; align-items:baseline; gap:4px;
+    background:var(--primary-soft); border-radius:var(--radius-md);
+    padding:10px 16px; min-width:118px; justify-content:center;
+  }
+  .weight-box input{
+    width:64px; border:none; background:transparent; text-align:right;
+    font-family:'Kanit',sans-serif; font-size:26px; font-weight:600; color:var(--primary-dark);
+    -moz-appearance:textfield;
+  }
+  .weight-box input::-webkit-outer-spin-button,
+  .weight-box input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .weight-box span{ font-size:14px; color:var(--primary); font-weight:600; }
+  input[type="range"]{
+    -webkit-appearance:none; appearance:none; flex:1; height:6px; border-radius:999px;
+    background:linear-gradient(90deg, var(--primary) 0%, var(--primary) var(--fill,50%), var(--line) var(--fill,50%), var(--line) 100%);
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
+    background:var(--accent); border:4px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.25); cursor:pointer;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:24px; height:24px; border-radius:50%; background:var(--accent);
+    border:4px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.25); cursor:pointer;
+  }
+  .range-caption{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin:2px 2px 26px; }
+
+  /* results */
+  .results{
+    display:grid; grid-template-columns:1fr 200px; gap:28px; align-items:center;
+    background:var(--primary-dark); border-radius:var(--radius-lg);
+    padding:28px 26px; color:#F6F2E7;
+  }
+  .results .range-title{ font-size:13px; color:#BFD6CE; font-weight:600; margin-bottom:6px; letter-spacing:.02em; }
+  .results .range-value{ font-size:clamp(28px,5vw,38px); font-weight:700; font-family:'Kanit',sans-serif; margin-bottom:4px; }
+  .results .range-value .unit{ font-size:15px; font-weight:400; color:#BFD6CE; }
+  .rec-pill{
+    display:inline-flex; align-items:baseline; gap:6px; margin-top:14px;
+    background:rgba(227,166,62,0.16); border:1px solid rgba(227,166,62,0.5);
+    border-radius:999px; padding:8px 16px 8px 14px;
+  }
+  .rec-pill .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .rec-pill b{ color:var(--accent); font-family:'Kanit',sans-serif; font-size:17px; }
+  .rec-note{ font-size:12.5px; color:#BFD6CE; margin-top:10px; max-width:340px; }
+
+  /* bowl gauge */
+  .bowl-col{ display:flex; flex-direction:column; align-items:center; }
+  .bowl-wrap{ position:relative; width:132px; height:128px; margin-bottom:6px; }
+  .bowl-rim{
+    position:absolute; top:0; left:6%; width:88%; height:16px; border-radius:50%;
+    border:3px solid #EFE3C4; background:#2A473F; z-index:3;
+  }
+  .bowl-body{
+    position:absolute; top:8px; left:0; width:100%; height:calc(100% - 8px);
+    clip-path: polygon(12% 0%, 88% 0%, 74% 100%, 26% 100%);
+    background:#2A473F; overflow:hidden; z-index:1;
+    border:0;
+  }
+  .bowl-fill{
+    position:absolute; bottom:0; left:0; width:100%; height:35%;
+    background:linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+    transition:height .6s cubic-bezier(.4,0,.2,1);
+  }
+  .bowl-fill::before{
+    content:""; position:absolute; top:0; left:0; width:100%; height:6px;
+    background:rgba(255,255,255,0.35);
+  }
+  .bowl-mark{
+    position:absolute; left:0; width:100%; height:1px; z-index:2;
+    border-top:2px dashed rgba(246,242,231,0.55);
+  }
+  .bowl-mark span{
+    position:absolute; right:calc(100% + 6px); top:-8px; font-size:10px; color:#D8E6E1; white-space:nowrap;
+  }
+  .bowl-scale-cap{ font-size:11px; color:#8FA79E; text-align:center; }
+
+  /* food equivalence */
+  .equiv-heading{ font-size:14px; font-weight:600; color:var(--ink-soft); margin:28px 0 12px; }
+  .equiv-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .equiv-chip{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius-md);
+    padding:14px 8px; text-align:center;
+  }
+  .equiv-chip svg{ width:28px; height:28px; color:var(--accent-dark); margin-bottom:6px; }
+  .equiv-chip .eq-num{ font-family:'Kanit',sans-serif; font-size:18px; font-weight:700; color:var(--primary-dark); display:block; }
+  .equiv-chip .eq-label{ font-size:11.5px; color:var(--ink-soft); }
+  .equiv-note{ font-size:11.5px; color:var(--ink-soft); margin-top:10px; }
+
+  /* ---------- INFO CARDS ---------- */
+  .section-heading{
+    font-size:22px; font-weight:600; margin:56px 0 6px; letter-spacing:-0.01em;
+  }
+  .section-sub{ font-size:14.5px; color:var(--ink-soft); margin-bottom:26px; }
+
+  .info-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .info-card{
+    background:var(--bg-card); border-radius:var(--radius-lg); padding:22px 20px;
+    border:2px solid var(--line); border-top-width:4px; transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .info-card.on{ box-shadow:var(--shadow-sm); }
+  .info-card[data-status="general"]{ border-top-color:var(--status1); }
+  .info-card[data-status="treatment"]{ border-top-color:var(--status2); }
+  .info-card[data-status="malnutrition"]{ border-top-color:var(--status3); }
+  .info-card[data-status="general"].on{ border-color:var(--status1); }
+  .info-card[data-status="treatment"].on{ border-color:var(--status2); }
+  .info-card[data-status="malnutrition"].on{ border-color:var(--status3); }
+  .info-card h3{ font-size:16px; font-weight:600; margin:0 0 4px; }
+  .info-card .info-sub{ font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .info-card .formula{
+    font-family:'Kanit',sans-serif; font-size:14px; font-weight:500;
+    background:var(--bg); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:10px;
+    color:var(--ink);
+  }
+  .info-card .formula b{ font-weight:700; }
+  .info-card[data-status="general"] .formula b{ color:var(--status1); }
+  .info-card[data-status="treatment"] .formula b{ color:var(--status2); }
+  .info-card[data-status="malnutrition"] .formula b{ color:var(--status3); }
+  .info-card .info-note{ font-size:12px; color:var(--ink-soft); }
+
+  /* summary strip */
+  .summary-card{
+    margin-top:28px; background:var(--accent-soft); border:1px solid var(--accent);
+    border-radius:var(--radius-lg); padding:22px 26px;
+  }
+  .summary-card h3{ margin:0 0 14px; font-size:15px; color:var(--accent-dark); }
+  .summary-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .summary-list li{ font-size:14.5px; display:flex; align-items:center; gap:10px; }
+  .summary-list .swatch{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .summary-list b{ font-family:'Kanit',sans-serif; }
+
+  footer{
+    margin-top:44px; padding-top:22px; border-top:1px solid var(--line);
+    font-size:12.5px; color:var(--ink-soft); text-align:center; line-height:1.7;
+  }
+  footer strong{ color:var(--ink); }
+
+  @media (max-width:720px){
+    .info-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width:600px){
+    .results{ grid-template-columns:1fr; }
+    .bowl-col{ order:-1; }
+    .equiv-row{ grid-template-columns:repeat(2,1fr); }
+    .calc-card{ padding:22px 18px; }
+  }
+  @media (max-width:420px){
+    .segmented{ grid-template-columns:1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow two"></div>
+  <span class="eyebrow">เครื่องมือประเมินเบื้องต้น</span>
+  <h1>คำนวณโปรตีนที่ควรได้รับ<br>สำหรับผู้ป่วยมะเร็ง</h1>
+  <p>ประเมินปริมาณโปรตีนที่เหมาะสมต่อวัน จากน้ำหนักตัวและสภาวะสุขภาพในปัจจุบัน</p>
+</header>
+
+<div class="wrap">
+
+  <section class="calc-card">
+    <div class="field-label"><span class="step">1</span> เลือกสถานะของผู้ป่วย</div>
+    <div class="segmented" id="segmented">
+      <div class="seg-btn active" data-status="general">
+        <span class="seg-label">ทั่วไป</span>
+        <span class="seg-sub">เฝ้าระวัง / ฟื้นตัว</span>
+      </div>
+      <div class="seg-btn" data-status="treatment">
+        <span class="seg-label">ระหว่างรักษา</span>
+        <span class="seg-sub">เคมีบำบัด · ฉายแสง · หลังผ่าตัด</span>
+      </div>
+      <div class="seg-btn" data-status="malnutrition">
+        <span class="seg-label">ทุพโภชนาการ</span>
+        <span class="seg-sub">น้ำหนักลดลงเร็ว</span>
+      </div>
+    </div>
+
+    <div class="field-label"><span class="step">2</span> ใส่น้ำหนักตัว</div>
+    <div class="weight-row">
+      <div class="weight-box">
+        <input type="number" id="weightInput" value="60" min="20" max="150" step="0.5" inputmode="decimal" aria-label="น้ำหนักตัวเป็นกิโลกรัม">
+        <span>กก.</span>
+      </div>
+      <input type="range" id="weightSlider" min="20" max="150" step="0.5" value="60" aria-hidden="true">
+    </div>
+    <div class="range-caption"><span>20 กก.</span><span>150 กก.</span></div>
+
+    <div class="field-label"><span class="step">3</span> ผลลัพธ์</div>
+    <div class="results" aria-live="polite">
+      <div>
+        <div class="range-title">ปริมาณโปรตีนที่ควรได้รับต่อวัน</div>
+        <div class="range-value"><span id="minVal">72.0</span> – <span id="maxVal">90.0</span> <span class="unit">กรัม/วัน</span></div>
+        <div class="rec-pill">
+          <span class="dot"></span>
+          แนะนำ <b id="recVal">81.0</b> <span style="color:#BFD6CE;font-size:12.5px;">กรัม/วัน</span>
+        </div>
+        <div class="rec-note" id="recNote">ค่ากึ่งกลางของช่วง เหมาะสำหรับรักษาสมดุลของร่างกายในระยะเฝ้าระวัง</div>
+      </div>
+      <div class="bowl-col">
+        <div class="bowl-wrap">
+          <div class="bowl-rim"></div>
+          <div class="bowl-body">
+            <div class="bowl-fill" id="bowlFill"></div>
+          </div>
+          <div class="bowl-mark" id="markMin"><span id="markMinLabel">72</span></div>
+          <div class="bowl-mark" id="markMax"><span id="markMaxLabel">90</span></div>
+        </div>
+        <div class="bowl-scale-cap">เทียบเป็นสัดส่วนจากช่วง 0–250 กรัม</div>
+      </div>
+    </div>
+
+    <div class="equiv-heading">เทียบเท่ากับอาหารโปรตีนสูงโดยประมาณ (จากค่าแนะนำ)</div>
+    <div class="equiv-row">
+      <div class="equiv-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3C8.5 3 6 9 6 14a6 6 0 0 0 12 0c0-5-2.5-11-6-11Z"/></svg>
+        <span class="eq-num" id="eqEgg">14</span>
+        <span class="eq-label">ฟองไข่ไก่</span>
+      </div>
+      <div class="equiv-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="6"/><path d="M9 14c-1.5 2-2 5-1 8"/><path d="M15 14c1.5 2 2 5 1 8"/></svg>
+        <span class="eq-num" id="eqChicken">2.6</span>
+        <span class="eq-label">อกไก่ (100 ก./ชิ้น)</span>
+      </div>
+      <div class="equiv-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg>
+        <span class="eq-num" id="eqTofu">10.1</span>
+        <span class="eq-label">เต้าหู้ (100 ก./ก้อน)</span>
+      </div>
+      <div class="equiv-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3h8l-1 4H9L8 3Z"/><path d="M9 7l-1.2 12.2A2 2 0 0 0 9.8 21h4.4a2 2 0 0 0 2-1.8L15 7"/><path d="M7.5 13h9"/></svg>
+        <span class="eq-num" id="eqMilk">10.1</span>
+        <span class="eq-label">นม (แก้ว 240 มล.)</span>
+      </div>
+    </div>
+    <div class="equiv-note">*ค่าประมาณจากอาหารทั่วไป ปริมาณโปรตีนจริงอาจแตกต่างกันตามยี่ห้อและวิธีปรุง</div>
+  </section>
+
+  <h2 class="section-heading">รายละเอียดแต่ละสถานะ</h2>
+  <p class="section-sub">สูตรคำนวณอ้างอิงตามสภาวะร่างกายของผู้ป่วยมะเร็งในแต่ละช่วง</p>
+  <div class="info-grid" id="infoGrid">
+    <div class="info-card on" data-status="general">
+      <h3>1. ผู้ป่วยทั่วไป</h3>
+      <div class="info-sub">ระยะเฝ้าระวัง / ฟื้นตัว</div>
+      <div class="formula">โปรตีน (กรัม/วัน) = น้ำหนัก (กก.) × <b>1.2–1.5</b></div>
+      <div class="info-note">เหมาะสำหรับผู้ป่วยที่ร่างกายอยู่ในภาวะคงที่ ไม่ได้อยู่ระหว่างการรักษาเข้มข้น</div>
+    </div>
+    <div class="info-card" data-status="treatment">
+      <h3>2. ระหว่างการรักษา</h3>
+      <div class="info-sub">เคมีบำบัด / ฉายแสง / หลังผ่าตัด</div>
+      <div class="formula">โปรตีน (กรัม/วัน) = น้ำหนัก (กก.) × <b>1.5–2.0</b></div>
+      <div class="info-note">ร่างกายต้องการโปรตีนเพิ่มขึ้นเพื่อซ่อมแซมเนื้อเยื่อและฟื้นฟูภูมิคุ้มกัน</div>
+    </div>
+    <div class="info-card" data-status="malnutrition">
+      <h3>3. ภาวะทุพโภชนาการ</h3>
+      <div class="info-sub">หรือน้ำหนักลดลงรวดเร็ว</div>
+      <div class="formula">โปรตีน (กรัม/วัน) = น้ำหนัก (กก.) × <b>1.5–2.0</b></div>
+      <div class="info-note">มักเน้นค่าบนของช่วงเพื่อฟื้นฟูมวลกล้ามเนื้อและร่างกายโดยเร็ว</div>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <h3>สรุปสูตรโดยย่อ</h3>
+    <ul class="summary-list">
+      <li><span class="swatch" style="background:var(--status1)"></span> ทั่วไป &nbsp;=&nbsp; <b>น้ำหนัก × 1.2–1.5</b></li>
+      <li><span class="swatch" style="background:var(--status2)"></span> ระหว่างรักษา &nbsp;=&nbsp; <b>น้ำหนัก × 1.5–2.0</b></li>
+      <li><span class="swatch" style="background:var(--status3)"></span> ทุพโภชนาการ &nbsp;=&nbsp; <b>น้ำหนัก × 2.0</b> (หรือ 1.5–2.0 ตามความรุนแรง)</li>
+    </ul>
+  </div>
+
+  <footer>
+    <strong>ข้อมูลนี้จัดทำขึ้นเพื่อเป็นแนวทางเบื้องต้นเท่านั้น</strong><br>
+    ควรปรึกษาแพทย์หรือนักโภชนาการเพื่อคำแนะนำที่เหมาะสมกับผู้ป่วยแต่ละราย
+  </footer>
+
+</div>
+
+<script>
+  const STATUS = {
+    general:      { min:1.2, max:1.5, mode:'mid',   color:'var(--status1)', note:'ค่ากึ่งกลางของช่วง เหมาะสำหรับรักษาสมดุลของร่างกายในระยะเฝ้าระวัง' },
+    treatment:    { min:1.5, max:2.0, mode:'upper',  color:'var(--status2)', note:'เน้นค่าบนของช่วง เพื่อรองรับความต้องการที่เพิ่มขึ้นระหว่างการรักษา' },
+    malnutrition: { min:1.5, max:2.0, mode:'upper',  color:'var(--status3)', note:'เน้นค่าบนของช่วง เพื่อเร่งฟื้นฟูมวลกล้ามเนื้อและร่างกาย' }
+  };
+  const SCALE_MAX = 250; // grams, for gauge visualization only
+
+  let currentStatus = 'general';
+  const weightInput = document.getElementById('weightInput');
+  const weightSlider = document.getElementById('weightSlider');
+
+  function tween(el, to, decimals){
+    const from = parseFloat(el.textContent) || 0;
+    const dur = 450;
+    const start = performance.now();
+    function frame(now){
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const val = from + (to - from) * eased;
+      el.textContent = val.toFixed(decimals);
+      if(p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  function calculate(){
+    const w = clamp(parseFloat(weightInput.value) || 0, 0, 400);
+    const s = STATUS[currentStatus];
+    const min = w * s.min;
+    const max = w * s.max;
+    const rec = s.mode === 'mid' ? (min + max) / 2 : max;
+
+    tween(document.getElementById('minVal'), min, 1);
+    tween(document.getElementById('maxVal'), max, 1);
+    tween(document.getElementById('recVal'), rec, 1);
+    document.getElementById('recNote').textContent = s.note;
+
+    const fillPct = clamp(rec / SCALE_MAX, 0, 1) * 100;
+    const minPct = clamp(min / SCALE_MAX, 0, 1) * 100;
+    const maxPct = clamp(max / SCALE_MAX, 0, 1) * 100;
+    document.getElementById('bowlFill').style.height = fillPct + '%';
+    document.getElementById('markMin').style.bottom = minPct + '%';
+    document.getElementById('markMax').style.bottom = maxPct + '%';
+    document.getElementById('markMinLabel').textContent = min.toFixed(0);
+    document.getElementById('markMaxLabel').textContent = max.toFixed(0);
+
+    document.getElementById('eqEgg').textContent = (rec / 6).toFixed(1);
+    document.getElementById('eqChicken').textContent = (rec / 31).toFixed(1);
+    document.getElementById('eqTofu').textContent = (rec / 8).toFixed(1);
+    document.getElementById('eqMilk').textContent = (rec / 8).toFixed(1);
+
+    document.querySelectorAll('.info-card').forEach(c=>{
+      c.classList.toggle('on', c.dataset.status === currentStatus);
+    });
+
+    const pct = ((w - weightSlider.min) / (weightSlider.max - weightSlider.min)) * 100;
+    weightSlider.style.setProperty('--fill', pct + '%');
+  }
+
+  document.querySelectorAll('.seg-btn').forEach(btn=>{
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatus = btn.dataset.status;
+      calculate();
+    });
+  });
+
+  weightInput.addEventListener('input', () => {
+    let v = clamp(parseFloat(weightInput.value) || 0, 20, 150);
+    weightSlider.value = v;
+    calculate();
+  });
+  weightSlider.addEventListener('input', () => {
+    weightInput.value = weightSlider.value;
+    calculate();
+  });
+
+  calculate();
+</script>
+
+</body>
+</html>
